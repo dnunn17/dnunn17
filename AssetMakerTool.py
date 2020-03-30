@@ -1,4 +1,4 @@
-#Destiny Nunn Asset maker tool
+#Destiny Nunn Asset maker tool for folder structure and naming convention
 
 import sys 
 from PyQt4 import QtCore, QtGui, uic
