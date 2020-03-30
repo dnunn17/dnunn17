@@ -1,17 +1,19 @@
+#Destiny Nunn Asset maker tool
+
 import sys 
 from PyQt4 import QtCore, QtGui, uic
 import os, shutil, stat 
-
-#folder path
 
 #get current path
 print(os.getcwd())
 
 qtCreatorFile = "AssetMakerUI.ui"
+#UI file referenced
 Ui_FirstMainWindow, QtBaseClass = uic.loadUiType(qtCreatorFile)
 
 class MyApp(QtGui.QMainWindow, Ui_FirstMainWindow):
     def __init__(self):
+        '''Initializing the Asset Maker Tool '''
         QtGui.QMainWindow.__init__(self)
         Ui_FirstMainWindow.__init__(self)
         self.setupUi(self)
@@ -25,33 +27,41 @@ class MyApp(QtGui.QMainWindow, Ui_FirstMainWindow):
              
 
     def setupMyUI(self):
+        '''Setting Up the UI for the Asset Maker Tool '''
+
+        #------------------------#
+        #setting up icon pictures
+        #------------------------#
+
         self.ExitBtn.setIcon(QtGui.QIcon('xIcon.png'))
-        """ Exit Icon """
-        self.ExitBtn.clicked.connect(self.exitButton)
-        '''EXIT function on screen'''
-
+        #Exit Icon
         self.ThreeD_Btn.setIcon(QtGui.QIcon('3D-objects-icon.png'))
-        ''' 3D Icon '''
+        #3D Icon
         self.AssetNameBtn.setIcon(QtGui.QIcon('pen.png'))
-        '''Icon for the NameAsset section'''
+        #NameAsset Icon
         self.twoD_Btn.setIcon(QtGui.QIcon('2DIcon.png'))
-        '''2D Icon'''
-
+        #2D Icon
         self.PropRadioBtn.setIcon(QtGui.QIcon('PropIcon.png'))
-        '''Prop Icon'''
+        #Prop Icon
         self.EnvironmentRadioBtn.setIcon(QtGui.QIcon('EnvIcon.png'))
-        '''Environment Icon'''
+        #Environment Icon
         self.CharacterRadioBtn.setIcon(QtGui.QIcon('CharIcon.png'))
-        '''Char Icon'''
-
+        #Char Icon
         self.MayaRadioButton.setIcon(QtGui.QIcon('MayaIcon.jpg'))
-        '''Maya Icon'''
+        #Maya Icon
         self.ZBrushRadioBtn.setIcon(QtGui.QIcon('ZBrushIcon.png'))
-        '''ZBrush Icon'''
+        #ZBrush Icon
         self.PhotoshopRadioBtn.setIcon(QtGui.QIcon('PSDIcon.png'))
-        '''Photoshop Icon'''
+        #Photoshop Icon
         self.IllustratorRadioBtn.setIcon(QtGui.QIcon('IllustratorIcon.png'))
-        '''Illustrator Icon'''
+        #Illustrator Icon
+
+        #-------------------------------#
+        #connecting buttons to functions
+        #-------------------------------#
+
+        self.ExitBtn.clicked.connect(self.exitButton)
+        #EXIT function
 
         self.twoD_Btn.toggled.connect(self.turnOnRadioBtns)
         self.ThreeD_Btn.toggled.connect(self.turnOnRadioBtns)
@@ -72,13 +82,10 @@ class MyApp(QtGui.QMainWindow, Ui_FirstMainWindow):
         #connects to the CreateBtnEnding function
         
         self.CreateBtn.clicked.connect(self.CreateBtnEnding)
-
-    #---------------------------------------------------#
-    '''BUTTON FUNCTIONS'''
-    #----------------------------------------------------#
+        #connects to the CreateBtnEnding function
 
     def exitButton(self):
-        #exit button function
+        '''exit button function'''
         reply = QtGui.QMessageBox.question(self,'Message', "Are you sure?", QtGui.QMessageBox.Yes|QtGui.QMessageBox.No, QtGui.QMessageBox.No)
 
         if reply == QtGui.QMessageBox.Yes:
@@ -89,7 +96,6 @@ class MyApp(QtGui.QMainWindow, Ui_FirstMainWindow):
 
         if self.twoD_Btn.isChecked():
             #Turns on the character, prop, and envrionment radio buttons if 2D is checked
-            print '2d'
             self.CharacterRadioBtn.setEnabled(True)
             self.PropRadioBtn.setEnabled(True)
             self.EnvironmentRadioBtn.setEnabled(True) 
@@ -97,13 +103,13 @@ class MyApp(QtGui.QMainWindow, Ui_FirstMainWindow):
 
         if self.ThreeD_Btn.isChecked():
             #Turns on the character, prop, and envrionment radio buttons if 3D is checked
-            print '3d'
             self.CharacterRadioBtn.setEnabled(True)
             self.PropRadioBtn.setEnabled(True)
             self.EnvironmentRadioBtn.setEnabled(True)
             self.AssetType.setEnabled(True)
 
     def secondSet(self):
+        '''Once Character, Environment, and Prop radio buttons are selected, the lineEdit box, AssetNameBtn and TextBtn unlock'''
         if self.CharacterRadioBtn.isChecked():
             #Turns on the file name if selected
             self.AssetNameBtn.setEnabled(True)
@@ -130,7 +136,7 @@ class MyApp(QtGui.QMainWindow, Ui_FirstMainWindow):
             return self.assetType
 
     def textSection(self):
-        #once you type in a word it will unlock the software section
+        '''once you type in a word it will unlock the software section'''
         querryText = self.lineEdit.text() #querries the text
         checkableText = str(querryText) #puts it in a string
 
@@ -159,7 +165,7 @@ class MyApp(QtGui.QMainWindow, Ui_FirstMainWindow):
         print self.lineEdit.text()
 
     def softwareBtn(self):
-        '''will unlock the create'''
+        '''will unlock the create button'''
         self.CreateBtn.setEnabled(True)
 
     def CreateBtnEnding(self):
@@ -189,7 +195,6 @@ class MyApp(QtGui.QMainWindow, Ui_FirstMainWindow):
         #Add and rename folder in Photoshop path
         os.rename('C:/Dev/fiea-capstones/AxolotlProductions/ArtDepot/{}/{}/Illustrator/T_Default.ai'.format(self.assetType, self.lineEdit.text()), 'C:/Dev/fiea-capstones/AxolotlProductions/ArtDepot/{}/{}/Illustrator/T_{}.ai'.format(self.assetType, self.lineEdit.text(), self.lineEdit.text()))
 
-            
         #will open up maya
         if self.MayaRadioButton.isChecked():
             mayaFile = 'C:/Dev/fiea-capstones/AxolotlProductions/ArtDepot/{}/{}/Maya/SM_{}.ma'.format(self.assetType, self.lineEdit.text(), self.lineEdit.text())
