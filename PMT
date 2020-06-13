@@ -1,0 +1,407 @@
+"""Project Management Tool - Destiny G. Nunn """
+### Librarys imported ###
+import sys, os, json, shutil, stat
+import ctypes
+from PyQt4 import QtCore, QtGui, uic
+
+#get the userName info
+userName = os.environ['userprofile']
+src = os.getcwd()
+
+access_rights = 0o755
+
+#this is the path for the temp folder
+tempFolderPath = "{}\\Temp".format(userName)
+if not os.path.exists(tempFolderPath):
+    os.makedirs(tempFolderPath, access_rights)
+
+#make a config file
+config = "{}\\Temp\\Config".format(userName)
+if not os.path.exists(config):
+    os.makedirs(config,access_rights)
+
+#if there is a temp file see if there is a file called PMT_Directory folder
+PMTFolderPath = "{}\\PMT_Directory".format(tempFolderPath)
+if not os.path.exists(PMTFolderPath):
+    os.makedirs(PMTFolderPath,access_rights)
+
+# Move the software default files to the temp folders created above #
+softwarePath = '{}\\Software'.format(src)
+newSoftwarePath = '{}\\Software'.format(config)
+
+if not os.path.exists(newSoftwarePath):
+    shutil.copytree(softwarePath,newSoftwarePath, access_rights )
+
+### UI File Referenced ###
+qtCreatorFile = "PMT.ui"
+# UI file referenced
+Ui_FirstMainWindow, QtBaseClass = uic.loadUiType(qtCreatorFile)
+
+class PMT(QtGui.QMainWindow, Ui_FirstMainWindow):
+    def __init__(self):
+        QtGui.QMainWindow.__init__(self)
+        Ui_FirstMainWindow.__init__(self)
+        self.setupUi(self)
+        self.setupBtns()
+        self.closeRadioBtns()
+
+        #for the assetMaker paths
+        self.assetPath = ''
+        self.softwarePath = ''
+
+        #asset names 
+        self.newAsset = ''
+
+        #this is for the treeview
+        self.model = QtGui.QFileSystemModel()
+        #for the custom menu for the treeview
+        self.treeView.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
+        self.treeView.customContextMenuRequested.connect(self.treeContexMenu)
+
+        self.userName = os.environ['userprofile']
+
+        ##Populate list tree with all projects that have been previously saved##
+        dirList = os.listdir(PMTFolderPath) #listing the files already in the directory
+        for folder in  dirList:
+            self.listWidget.addItem(folder)
+
+        JsonDict = {
+            'TopFolder' :{                
+                "ArtDepo":
+                {
+                    "Audio" : [],
+                    "Character" : [ "FBX", "Illustrator", "Maya", "Photoshop", "SubstancePainter","Texture", "UVSnaps", "ZBrush"],
+                    "ConceptArt" : [],
+                    "Environment" : [ "FBX", "Illustrator", "Maya", "Photoshop", "SubstancePainter","Texture", "UVSnaps", "ZBrush"],
+                    "Font" : [],
+                    "Props" : [ "FBX", "Illustrator", "Maya", "Photoshop", "SubstancePainter","Texture", "UVSnaps", "ZBrush"],
+                    "Tools" : [ "Config" ],
+                    "UI" : [],
+                    "VFX" : [ "Houdini", "Shaders" ],
+                    },
+                "Documentation" : [ "PowerPoint", "Word", "Excel", "Marketing", "PDF" ],
+                "Game" : ["Content"],
+                "Tools": ["Config"],
+                },
+            }
+
+        json_dump = json.dumps(JsonDict, sort_keys=False, indent = 4)
+
+        with open("{}\\Temp\\Config\\FolderDict.json".format(self.userName), "w") as outfile:
+            outfile.write(json_dump)
+
+        with open("{}\\Temp\\Config\\FolderDict.json".format(self.userName)) as json_file:
+            self.folderDict = json.load(json_file)
+
+    def setupBtns(self):
+        '''connecting button clicks to other functions'''
+        self.listWidget.currentItemChanged.connect(self.assetFolderUnlocked)
+
+        self.Cancel_Btn.clicked.connect(self.cancel)
+        self.CreateProject_Btn.clicked.connect(self.createProject)
+        self.Create_Btn.clicked.connect(self.assetCreate)
+
+        self.DeleteProject_Btn.clicked.connect(self.deleteProject)
+
+        self.HelpBtn.clicked.connect(self.helpBtn)
+
+        self.listWidget.itemClicked.connect(self.listToTree)
+
+        self.RenameProject_Btn.clicked.connect(self.renameProject)
+
+        self.Character_Btn.clicked.connect(self.assetCharEnvProp)
+        self.Env_Btn.clicked.connect(self.assetCharEnvProp)
+        self.Prop_Btn.clicked.connect(self.assetCharEnvProp)
+        self.VFX_Btn.clicked.connect(self.assetCharEnvProp)
+
+    #############################
+    ### Asset Maker Functions ###
+    #############################
+
+    def assetCharEnvProp(self):
+        ''' this create the assetPath for the character, environment, VFX, and props '''
+        if self.Character_Btn.isChecked():
+            self.assetPath = 'Character'
+        elif self.Env_Btn.isChecked():
+            self.assetPath = 'Environment'
+        elif self.Prop_Btn.isChecked():
+            self.assetPath = 'Props'
+        else:
+            self.assetPath = 'VFX'
+
+    def assetCreate(self):
+        '''this is to create a new asset'''
+
+        #get the name of the project
+        selected = self.listWidget.selectedItems()
+        #this is the projected selected
+        prj = (selected[0].text())
+        assetFullPath =  '{}\\{}\\ArtDepo\\{}'.format(PMTFolderPath, prj,self.assetPath)
+        #name of asset
+        assetLine = self.AssetLine.text()
+        self.assetTxt = str(assetLine)
+
+        #Software copy paths
+        houPath = '{}\\Temp\\Config\\Software\\Default.hipnc'.format(userName)
+        zbPath = '{}\\Temp\\Config\\Software\\Default.ZPR'.format(userName)
+        mayaPath = '{}\\Temp\\Config\\Software\\Default.ma'.format(userName)
+        aiPath = '{}\\Temp\\Config\\Software\\Default.ai'.format(userName)
+        psdPath = '{}\\Temp\\Config\\Software\\Default.psd'.format(userName)
+
+        #Character, Env, Prop Assets
+        if self.assetPath == 'Character' or self.assetPath == 'Environment' or self.assetPath == 'Props':
+            #maya file
+            shutil.copy2(mayaPath, '{}\\Maya'.format(assetFullPath))
+            os.rename(r'{}\\Maya\\Default.ma'.format(assetFullPath), r'{}\\Maya\\{}.ma'.format(assetFullPath,self.assetTxt))
+            #zbrush file
+            shutil.copy2(zbPath, '{}\\ZBrush'.format(assetFullPath))
+            os.rename(r'{}\\ZBrush\\Default.ZPR'.format(assetFullPath), r'{}\\ZBrush\\{}.ZPR'.format(assetFullPath,self.assetTxt))
+            #illustrator file
+            shutil.copy2(aiPath, '{}\\Illustrator'.format(assetFullPath))
+            os.rename(r'{}\\Illustrator\\Default.ai'.format(assetFullPath), r'{}\\Illustrator\\{}.ai'.format(assetFullPath,self.assetTxt))
+            #photoshop file
+            shutil.copy2(psdPath, '{}\\Photoshop'.format(assetFullPath))
+            os.rename(r'{}\\Photoshop\\Default.psd'.format(assetFullPath), r'{}\\Photoshop\\{}.psd'.format(assetFullPath,self.assetTxt))
+
+            charEnvPropCreated = ctypes.windll.user32.MessageBoxW(None, u'Your asset has been created.', u"Asset Created", 0)
+
+        elif self.assetPath == "VFX":
+            #creating a houdini file
+            shutil.copy2(houPath, '{}\\Houdini'.format(assetFullPath))
+            os.rename(r'{}\\Houdini\\Default.hipnc'.format(assetFullPath), r'{}\\Houdini\\{}.hipnc'.format(assetFullPath,self.assetTxt))
+
+            VFXCreated = ctypes.windll.user32.MessageBoxW(None, u'Your asset has been created under the ArtDepo folder.', u"Asset Created", 0)
+
+        else:
+            noAssetCreated = ctypes.windll.user32.MessageBoxW(None, u'Please Select an Asset Type First.', u"Error", 0)
+
+
+    def assetFolderUnlocked(self):
+        '''unlocks the assets folder names when the project is selected'''
+        #unlocks the asset folder buttons
+        self.Character_Btn.setEnabled(True)
+        self.Env_Btn.setEnabled(True)
+        self.Prop_Btn.setEnabled(True)
+        self.VFX_Btn.setEnabled(True)
+        self.Create_Btn.setEnabled(True)
+
+    #############################
+    ### Button Functions ###
+    #############################
+
+    def cancel(self):
+        '''this will exit out of the PMT tool'''
+        self.close()
+
+    def closeRadioBtns(self):
+        '''This will make the radio buttons on the asset maker tab unselectable'''
+        self.Character_Btn.setEnabled(False)
+        self.Env_Btn.setEnabled(False)
+        self.Prop_Btn.setEnabled(False)
+        self.VFX_Btn.setEnabled(False)
+
+    def createProject(self):
+        '''this will allow the user to create a new project'''
+        MB_YESNO = 4
+        #querries the text
+        projTxt = self.CreateProjectLine.text()
+        projCheckTxt = str(projTxt)
+
+        newProjFolder = "{}\\{}".format(PMTFolderPath,projTxt)
+
+        #check to see if there is something in the text box
+        if projCheckTxt == "":
+            error1 = ctypes.windll.user32.MessageBoxW(None, u'Please type in a project name', u"Error", 0)
+        #check to see if the first letter needs to be capitalized
+        elif projCheckTxt[0].islower() == True:
+            error2 = ctypes.windll.user32.MessageBoxW(None, u'Please capitalize the first letter of the project name', u"Error", 0)
+        elif projCheckTxt[1].isupper() == True:
+            error3 = ctypes.windll.user32.MessageBoxW(None, u'Please only capitalize the first letter of the project', u"Error", 0)
+        else:
+            areYouSure = ctypes.windll.user32.MessageBoxW(None, u'Are you sure you want to name your project this?', u"Warning", 4)
+            #checking to see if the user wants to name the project what they inputted
+            if areYouSure == 6:
+                if not os.path.exists(newProjFolder):
+                    #if they hit yes it creates a new project folder with the name they used as an input as long as it doesnt already exists
+                    os.makedirs(newProjFolder)
+                    #adds it to the list widget 
+                    self.listWidget.addItem(projCheckTxt)
+
+                else:
+                    error4 = ctypes.windll.user32.MessageBoxW(None, u'This Project already exists. Please try a new project name', u"Error", 0)
+
+        for key in self.folderDict['TopFolder']:
+            #adds the game, artdepo, documentation, and tools folder
+            topFolderPath = '{}\\{}'.format(newProjFolder,key)
+            os.mkdir(topFolderPath)
+
+        for key in self.folderDict['TopFolder']["Game"]:
+            #adds the game, artdepo, documentation, and tools folder
+            GamePath = '{}\\Game\\{}'.format(newProjFolder,key)
+            os.mkdir(GamePath)
+
+        for art in self.folderDict['TopFolder']['ArtDepo']:
+            #adds the artdepo folders
+            artDepoPath = '{}\\ArtDepo\\{}'.format(newProjFolder, art)
+            gamePath = '{}\\Game\\Content\\{}'.format(newProjFolder, art)
+            os.mkdir(artDepoPath)
+            os.mkdir(gamePath)
+
+        for x in self.folderDict['TopFolder']['Tools']:
+            Configpath = '{}\\Tools\\{}'.format(newProjFolder,x)
+            LowConPath = '{}\\ArtDepo\\Tools\\{}'.format(newProjFolder,x)
+            os.mkdir(Configpath)
+            os.mkdir(LowConPath)
+
+        for doc in self.folderDict['TopFolder']['Documentation']:
+            docPath = '{}\\Documentation\\{}'.format(newProjFolder, doc)
+            os.mkdir(docPath)
+
+        for vfx in self.folderDict['TopFolder']['ArtDepo']['VFX']:
+            vfxPath = '{}\\ArtDepo\\VFX\\{}'.format(newProjFolder, vfx)
+            os.mkdir(vfxPath)
+
+        for char in self.folderDict['TopFolder']['ArtDepo']['Character']:
+            #add in the folders for env, prop, and character
+            charPath = '{}\\ArtDepo\\Character\\{}'.format(newProjFolder, char)
+            envPath = '{}\\ArtDepo\\Environment\\{}'.format(newProjFolder, char)
+            proppath = '{}\\ArtDepo\\Props\\{}'.format(newProjFolder, char)
+            os.mkdir(charPath)
+            os.mkdir(envPath)
+            os.mkdir(proppath)
+
+    def deleteProject(self):
+        '''this will allow the user to delete any project from the tool '''
+        remove = ctypes.windll.user32.MessageBoxW(None, u'Are you sure you want to delete the selected project? \n This cannot be undone.', u"Warning", 4)
+        #for the row that is selected
+        row = self.listWidget.currentRow()
+
+        selected = self.listWidget.selectedItems()
+        #this is the projected selected
+        projectSelected = (selected[0].text())
+        #the project path
+        projectPath = '{}\\Temp\\PMT_Directory\\{}'.format(self.userName,projectSelected)
+
+        if remove == 6:
+            #if they hit yes the following happens
+            print 'removed'
+            try:
+                shutil.rmtree(projectPath)
+                self.listWidget.takeItem(row)
+            except OSError as e:
+                print ("Error: %s : %s" % (projectPath, e.strerror))
+                noPrj = ctypes.windll.user32.MessageBoxW(None, u'This project does not exists.', u"Error", 0)
+        else:
+            pass
+
+    def helpBtn(self):
+        '''this is a help button to guide the user on how to use the exisiting asset tree'''
+        help = ctypes.windll.user32.MessageBoxW(None, u'Select project from list above to populate this tree. \n\n Right mouse click on an a file \n\n You can open or delete assets.', u"Help", 0)
+
+    def renameProject(self):
+        ''' This will rename the selected project'''
+        print 'rename'
+
+        #for the row that is selected
+        row = self.listWidget.currentRow()
+        selected = self.listWidget.selectedItems()
+        #this is the projected selected
+        projectSelected = (selected[0].text())
+        #the project path
+        projectPath = '{}\\Temp\\PMT_Directory\\{}'.format(self.userName,projectSelected)
+
+        #user input for the renaming
+        renameTxt = self.renameEdit.text()
+        renameCheckTxt = str(renameTxt)
+
+        newProjectName = '{}\\Temp\\PMT_Directory\\{}'.format(self.userName,renameTxt)
+
+        #to rename the project
+        try:
+            shutil.copytree(projectPath, newProjectName)
+            self.listWidget.addItem(renameTxt)
+            self.listWidget.takeItem(row)
+            shutil.rmtree(projectPath)
+            
+        except:
+            ctypes.windll.user32.MessageBoxW(None, u'Please select a project and input a new name first.', u"Error", 0)
+
+    #############################
+    ### List and Tree Widgets ###
+    #############################
+
+    def listToTree(self):
+        '''if the user clicks the item on the list, it appears on the tree'''
+
+        #get the item from the list widget selected
+        itemSelected = self.listWidget.selectedItems()
+        #make it readable
+        prjSelected = itemSelected[0].text()
+
+        path = '{}\\{}'.format(PMTFolderPath, prjSelected)
+
+        #treeview widget set up
+        self.model.setRootPath (QtCore.QDir.rootPath())
+        self.treeView.setModel(self.model)
+        #set the root to pull up the selected projects folder structure
+        self.treeView.setRootIndex(self.model.index(path))
+
+    def treeContexMenu(self):
+        '''for the RMB click context menu '''
+        menu = QtGui.QMenu()
+
+        #add the menu options
+        open = menu.addAction("Open")
+        #rename = menu.addAction("Rename")
+        delete = menu.addAction("Delete")
+        
+        #for the functions of the menu
+        open.triggered.connect(self.treeOpen)
+        
+        #rename asset
+        #rename.triggered.connect(self.treeRename)
+
+        #delete tree item
+        delete.triggered.connect(self.treeDelete)
+
+        #to get mouse position
+        cursor = QtGui.QCursor()
+        menu.exec_(cursor.pos())
+
+    def treeDelete(self):
+        ''' to delete tree asset'''
+        index = self.treeView.currentIndex()
+        filePath = self.model.filePath(index)
+        fp = str(filePath)
+
+        #to delete file
+        remove = ctypes.windll.user32.MessageBoxW(None, u'Are you sure you want to delete the selected file? \n This cannot be undone.', u"Warning", 4)
+        if remove == 6:
+            #if they hit yes it will remove the asset
+            try:
+                os.remove(fp)
+            except:
+                ctypes.windll.user32.MessageBoxW(None, u'You can only delete assets. Please leave the folder structure alone.', u"Error", 0)
+        else:
+            pass        
+
+    def treeOpen(self):
+        '''open functon for the tree widget'''
+        index = self.treeView.currentIndex()
+        filePath = self.model.filePath(index)
+        #will open the file 
+        os.startfile(filePath)
+
+    def treeRename(self):
+        '''rename assets in tree folders'''
+        print "rename"
+        index = self.treeView.currentIndex()
+        filePath = self.model.filePath(index)
+        fp = str(filePath)
+        shutil.copy2()
+
+if __name__ == '__main__':
+    app = QtGui.QApplication(sys.argv)
+    window = PMT()
+    window.show()
+    sys.exit(app.exec_())
