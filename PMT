@@ -1,6 +1,6 @@
 """Project Management Tool - Destiny G. Nunn """
 ### Librarys imported ###
-import sys, os, json, shutil, stat
+import sys, os, json, shutil
 import ctypes
 from PyQt4 import QtCore, QtGui, uic
 
@@ -8,29 +8,27 @@ from PyQt4 import QtCore, QtGui, uic
 userName = os.environ['userprofile']
 src = os.getcwd()
 
-access_rights = 0o755
-
 #this is the path for the temp folder
 tempFolderPath = "{}\\Temp".format(userName)
 if not os.path.exists(tempFolderPath):
-    os.makedirs(tempFolderPath, access_rights)
+    os.makedirs(tempFolderPath)
 
 #make a config file
 config = "{}\\Temp\\Config".format(userName)
 if not os.path.exists(config):
-    os.makedirs(config,access_rights)
+    os.makedirs(config)
 
 #if there is a temp file see if there is a file called PMT_Directory folder
 PMTFolderPath = "{}\\PMT_Directory".format(tempFolderPath)
 if not os.path.exists(PMTFolderPath):
-    os.makedirs(PMTFolderPath,access_rights)
+    os.makedirs(PMTFolderPath)
 
 # Move the software default files to the temp folders created above #
 softwarePath = '{}\\Software'.format(src)
 newSoftwarePath = '{}\\Software'.format(config)
 
 if not os.path.exists(newSoftwarePath):
-    shutil.copytree(softwarePath,newSoftwarePath, access_rights )
+    shutil.copytree(softwarePath,newSoftwarePath )
 
 ### UI File Referenced ###
 qtCreatorFile = "PMT.ui"
@@ -64,6 +62,7 @@ class PMT(QtGui.QMainWindow, Ui_FirstMainWindow):
         dirList = os.listdir(PMTFolderPath) #listing the files already in the directory
         for folder in  dirList:
             self.listWidget.addItem(folder)
+            self.assetProject_List.addItem(folder)
 
         JsonDict = {
             'TopFolder' :{                
@@ -95,51 +94,79 @@ class PMT(QtGui.QMainWindow, Ui_FirstMainWindow):
 
     def setupBtns(self):
         '''connecting button clicks to other functions'''
-        self.listWidget.currentItemChanged.connect(self.assetFolderUnlocked)
+        self.assetProject_List.currentItemChanged.connect(self.assetFolderUnlocked)
 
         self.Cancel_Btn.clicked.connect(self.cancel)
         self.CreateProject_Btn.clicked.connect(self.createProject)
         self.Create_Btn.clicked.connect(self.assetCreate)
+        self.CreateOpen_Btn.clicked.connect(self.assetCreateOpen)
+
+        self.Character_Btn.clicked.connect(self.assetCharEnvProp)
 
         self.DeleteProject_Btn.clicked.connect(self.deleteProject)
+
+        self.Env_Btn.clicked.connect(self.assetCharEnvProp)
 
         self.HelpBtn.clicked.connect(self.helpBtn)
 
         self.listWidget.itemClicked.connect(self.listToTree)
 
-        self.RenameProject_Btn.clicked.connect(self.renameProject)
-
-        self.Character_Btn.clicked.connect(self.assetCharEnvProp)
-        self.Env_Btn.clicked.connect(self.assetCharEnvProp)
         self.Prop_Btn.clicked.connect(self.assetCharEnvProp)
-        self.VFX_Btn.clicked.connect(self.assetCharEnvProp)
+
+        self.SoftwareGrp.buttonClicked.connect(self.assetsoftware)
+
+        self.VFX_Btn.clicked.connect(self.assetVFX)
 
     #############################
     ### Asset Maker Functions ###
     #############################
 
     def assetCharEnvProp(self):
-        ''' this create the assetPath for the character, environment, VFX, and props '''
+        ''' this unlocks the radio buttons for the character, environment, and props '''
+        #makes the houdini button unclickable
+        self.Hou_Btn.setEnabled(False)
+        #makes the other buttons clickable
+        self.IllustratorBtn.setEnabled(True)
+        self.MayaBtn.setEnabled(True)
+        self.PSD_Btn.setEnabled(True)
+        self.ZBrush_Btn.setEnabled(True)
+
+        #create the assetPath
         if self.Character_Btn.isChecked():
             self.assetPath = 'Character'
         elif self.Env_Btn.isChecked():
             self.assetPath = 'Environment'
-        elif self.Prop_Btn.isChecked():
-            self.assetPath = 'Props'
         else:
-            self.assetPath = 'VFX'
+            self.assetPath = 'Props'
 
     def assetCreate(self):
         '''this is to create a new asset'''
-
         #get the name of the project
-        selected = self.listWidget.selectedItems()
+        selected = self.assetProject_List.selectedItems()
         #this is the projected selected
         prj = (selected[0].text())
-        assetFullPath =  '{}\\{}\\ArtDepo\\{}'.format(PMTFolderPath, prj,self.assetPath)
+        assetFullPath =  '{}\\{}\\ArtDepo\\{}\\{}'.format(PMTFolderPath, prj,self.assetPath, self.softwarePath )
         #name of asset
         assetLine = self.AssetLine.text()
         self.assetTxt = str(assetLine)
+
+        #make sure the appropriate software is created with the file type
+        if assetFullPath == '{}\\{}\\ArtDepo\\Character\\Houdini'.format(PMTFolderPath, prj) :
+            error1 = ctypes.windll.user32.MessageBoxW(None, u'Houdini can be only used for a VFX File. \n Please choose an appropriate software to create your asset', u"Error", 0)
+        elif assetFullPath == '{}\\{}\\ArtDepo\\Environment\\Houdini'.format(PMTFolderPath, prj):
+            error2 = ctypes.windll.user32.MessageBoxW(None, u'Houdini can be only used for a VFX File. \n Please choose an appropriate software to create your asset', u"Error", 0)
+        elif assetFullPath == '{}\\{}\\ArtDepo\\Props\\Houdini'.format(PMTFolderPath, prj):
+            error3 = ctypes.windll.user32.MessageBoxW(None, u'Houdini can be only used for a VFX File. \n Please choose an appropriate software to create your asset', u"Error", 0)
+        elif assetFullPath == '{}\\{}\\ArtDepo\\VFX\\Maya'.format(PMTFolderPath, prj):
+            error4 = ctypes.windll.user32.MessageBoxW(None, u'Maya can be only used for a Character, Prop or Environment file. \n Please choose an appropriate software to create your asset', u"Error", 0)
+        elif assetFullPath == '{}\\{}\\ArtDepo\\VFX\\Illustrator'.format(PMTFolderPath, prj):
+            error5 = ctypes.windll.user32.MessageBoxW(None, u'Illustrator can be only used for a Character, Prop or Environment file. \n Please choose an appropriate software to create your asset', u"Error", 0)
+        elif assetFullPath == '{}\\{}\\ArtDepo\\VFX\\ZBrush'.format(PMTFolderPath, prj):
+            error6 = ctypes.windll.user32.MessageBoxW(None, u'ZBrush can be only used for a Character, Prop or Environment file. \n Please choose an appropriate software to create your asset', u"Error", 0)
+        elif assetFullPath == '{}\\{}\\ArtDepo\\VFX\\Photoshop'.format(PMTFolderPath, prj):
+            error7 = ctypes.windll.user32.MessageBoxW(None, u'Photoshop can be only used for a Character, Prop or Environment file. \n Please choose an appropriate software to create your asset', u"Error", 0)
+        else:
+            pass
 
         #Software copy paths
         houPath = '{}\\Temp\\Config\\Software\\Default.hipnc'.format(userName)
@@ -148,33 +175,41 @@ class PMT(QtGui.QMainWindow, Ui_FirstMainWindow):
         aiPath = '{}\\Temp\\Config\\Software\\Default.ai'.format(userName)
         psdPath = '{}\\Temp\\Config\\Software\\Default.psd'.format(userName)
 
-        #Character, Env, Prop Assets
-        if self.assetPath == 'Character' or self.assetPath == 'Environment' or self.assetPath == 'Props':
-            #maya file
-            shutil.copy2(mayaPath, '{}\\Maya'.format(assetFullPath))
-            os.rename(r'{}\\Maya\\Default.ma'.format(assetFullPath), r'{}\\Maya\\{}.ma'.format(assetFullPath,self.assetTxt))
-            #zbrush file
-            shutil.copy2(zbPath, '{}\\ZBrush'.format(assetFullPath))
-            os.rename(r'{}\\ZBrush\\Default.ZPR'.format(assetFullPath), r'{}\\ZBrush\\{}.ZPR'.format(assetFullPath,self.assetTxt))
-            #illustrator file
-            shutil.copy2(aiPath, '{}\\Illustrator'.format(assetFullPath))
-            os.rename(r'{}\\Illustrator\\Default.ai'.format(assetFullPath), r'{}\\Illustrator\\{}.ai'.format(assetFullPath,self.assetTxt))
-            #photoshop file
-            shutil.copy2(psdPath, '{}\\Photoshop'.format(assetFullPath))
-            os.rename(r'{}\\Photoshop\\Default.psd'.format(assetFullPath), r'{}\\Photoshop\\{}.psd'.format(assetFullPath,self.assetTxt))
+        #see what software is being used
+        if self.softwarePath == 'Houdini':
+            shutil.copy2(houPath, assetFullPath)
+            os.rename(r'{}\\Default.hipnc'.format(assetFullPath), r'{}\\{}.hipnc'.format(assetFullPath,self.assetTxt))
+            self.newAsset = '{}\\{}.hipnc'.format(assetFullPath,self.assetTxt)
+            houCreated = ctypes.windll.user32.MessageBoxW(None, u'Your asset has been created.', u"Asset Created", 0)
 
-            charEnvPropCreated = ctypes.windll.user32.MessageBoxW(None, u'Your asset has been created.', u"Asset Created", 0)
+        elif self.softwarePath == 'Illustrator':
+            shutil.copy2(aiPath, assetFullPath)
+            os.rename(r'{}\\Default.ai'.format(assetFullPath), r'{}\\{}.ai'.format(assetFullPath,self.assetTxt))
+            self.newAsset = '{}\\{}.ai'.format(assetFullPath,self.assetTxt)
+            AiCreated = ctypes.windll.user32.MessageBoxW(None, u'Your asset has been created.', u"Asset Created", 0)
 
-        elif self.assetPath == "VFX":
-            #creating a houdini file
-            shutil.copy2(houPath, '{}\\Houdini'.format(assetFullPath))
-            os.rename(r'{}\\Houdini\\Default.hipnc'.format(assetFullPath), r'{}\\Houdini\\{}.hipnc'.format(assetFullPath,self.assetTxt))
+        elif self.softwarePath == 'Maya':
+            shutil.copy2(mayaPath, assetFullPath)
+            os.rename(r'{}\\Default.ma'.format(assetFullPath), r'{}\\{}.ma'.format(assetFullPath,self.assetTxt))
+            self.newAsset ='{}\\{}.ma'.format(assetFullPath,self.assetTxt)
+            MayaCreated = ctypes.windll.user32.MessageBoxW(None, u'Your asset has been created.', u"Asset Created", 0)
 
-            VFXCreated = ctypes.windll.user32.MessageBoxW(None, u'Your asset has been created under the ArtDepo folder.', u"Asset Created", 0)
+        elif self.softwarePath == 'Photoshop':
+            shutil.copy2(psdPath, assetFullPath)
+            os.rename(r'{}\\Default.psd'.format(assetFullPath), r'{}\\{}.psd'.format(assetFullPath,self.assetTxt))
+            self.newAsset ='{}\\{}.psd'.format(assetFullPath,self.assetTxt)
+            PsdCreated = ctypes.windll.user32.MessageBoxW(None, u'Your asset has been created.', u"Asset Created", 0)
 
         else:
-            noAssetCreated = ctypes.windll.user32.MessageBoxW(None, u'Please Select an Asset Type First.', u"Error", 0)
+            shutil.copy2(zbPath, assetFullPath)
+            os.rename(r'{}\\Default.ZPR'.format(assetFullPath), r'{}\\{}.ZPR'.format(assetFullPath,self.assetTxt))
+            self.newAsset ='{}\\{}.ZPR'.format(assetFullPath,self.assetTxt)
+            ZbrushCreated = ctypes.windll.user32.MessageBoxW(None, u'Your asset has been created.', u"Asset Created", 0)
 
+    def assetCreateOpen(self):
+        ''' this will create and open the asset '''
+        self.assetCreate()
+        os.startfile(self.newAsset)
 
     def assetFolderUnlocked(self):
         '''unlocks the assets folder names when the project is selected'''
@@ -183,7 +218,32 @@ class PMT(QtGui.QMainWindow, Ui_FirstMainWindow):
         self.Env_Btn.setEnabled(True)
         self.Prop_Btn.setEnabled(True)
         self.VFX_Btn.setEnabled(True)
-        self.Create_Btn.setEnabled(True)
+
+    def assetsoftware(self):
+        ''' This is to select the software''' 
+        if  self.Hou_Btn.isChecked():
+            self.softwarePath = 'Houdini'
+        elif self.IllustratorBtn.isChecked():
+            self.softwarePath = 'Illustrator'
+        elif self.MayaBtn.isChecked():
+            self.softwarePath = 'Maya'
+        elif self.PSD_Btn.isChecked():
+            self.softwarePath = 'Photoshop'
+        else:
+            self.softwarePath = 'ZBrush'
+
+    def assetVFX(self):
+        ''' this unlocks the radio buttons for the vfx '''
+        #makes the houdini button clickable
+        self.Hou_Btn.setEnabled(True)
+        #makes the other buttons unclickable
+        self.IllustratorBtn.setEnabled(False)
+        self.MayaBtn.setEnabled(False)
+        self.PSD_Btn.setEnabled(False)
+        self.ZBrush_Btn.setEnabled(False)
+
+        #create the assetPath 
+        self.assetPath = 'VFX'
 
     #############################
     ### Button Functions ###
@@ -199,6 +259,11 @@ class PMT(QtGui.QMainWindow, Ui_FirstMainWindow):
         self.Env_Btn.setEnabled(False)
         self.Prop_Btn.setEnabled(False)
         self.VFX_Btn.setEnabled(False)
+        self.Hou_Btn.setEnabled(False)
+        self.IllustratorBtn.setEnabled(False)
+        self.MayaBtn.setEnabled(False)
+        self.PSD_Btn.setEnabled(False)
+        self.ZBrush_Btn.setEnabled(False)
 
     def createProject(self):
         '''this will allow the user to create a new project'''
@@ -206,7 +271,6 @@ class PMT(QtGui.QMainWindow, Ui_FirstMainWindow):
         #querries the text
         projTxt = self.CreateProjectLine.text()
         projCheckTxt = str(projTxt)
-
         newProjFolder = "{}\\{}".format(PMTFolderPath,projTxt)
 
         #check to see if there is something in the text box
@@ -226,6 +290,8 @@ class PMT(QtGui.QMainWindow, Ui_FirstMainWindow):
                     os.makedirs(newProjFolder)
                     #adds it to the list widget 
                     self.listWidget.addItem(projCheckTxt)
+                    #adds it to the list widget for the asset maker section
+                    self.assetProject_List.addItem(projCheckTxt)
 
                 else:
                     error4 = ctypes.windll.user32.MessageBoxW(None, u'This Project already exists. Please try a new project name', u"Error", 0)
@@ -292,39 +358,11 @@ class PMT(QtGui.QMainWindow, Ui_FirstMainWindow):
                 print ("Error: %s : %s" % (projectPath, e.strerror))
                 noPrj = ctypes.windll.user32.MessageBoxW(None, u'This project does not exists.', u"Error", 0)
         else:
-            pass
+            print 'nope'
 
     def helpBtn(self):
         '''this is a help button to guide the user on how to use the exisiting asset tree'''
-        help = ctypes.windll.user32.MessageBoxW(None, u'Select project from list above to populate this tree. \n\n Right mouse click on an a file \n\n You can open or delete assets.', u"Help", 0)
-
-    def renameProject(self):
-        ''' This will rename the selected project'''
-        print 'rename'
-
-        #for the row that is selected
-        row = self.listWidget.currentRow()
-        selected = self.listWidget.selectedItems()
-        #this is the projected selected
-        projectSelected = (selected[0].text())
-        #the project path
-        projectPath = '{}\\Temp\\PMT_Directory\\{}'.format(self.userName,projectSelected)
-
-        #user input for the renaming
-        renameTxt = self.renameEdit.text()
-        renameCheckTxt = str(renameTxt)
-
-        newProjectName = '{}\\Temp\\PMT_Directory\\{}'.format(self.userName,renameTxt)
-
-        #to rename the project
-        try:
-            shutil.copytree(projectPath, newProjectName)
-            self.listWidget.addItem(renameTxt)
-            self.listWidget.takeItem(row)
-            shutil.rmtree(projectPath)
-            
-        except:
-            ctypes.windll.user32.MessageBoxW(None, u'Please select a project and input a new name first.', u"Error", 0)
+        help = ctypes.windll.user32.MessageBoxW(None, u'Select project from list above to populate this tree. \n\n Right mouse click on an a file \n\n You can open, rename, or delete assets.', u"Help", 0)
 
     #############################
     ### List and Tree Widgets ###
@@ -378,10 +416,7 @@ class PMT(QtGui.QMainWindow, Ui_FirstMainWindow):
         remove = ctypes.windll.user32.MessageBoxW(None, u'Are you sure you want to delete the selected file? \n This cannot be undone.', u"Warning", 4)
         if remove == 6:
             #if they hit yes it will remove the asset
-            try:
-                os.remove(fp)
-            except:
-                ctypes.windll.user32.MessageBoxW(None, u'You can only delete assets. Please leave the folder structure alone.', u"Error", 0)
+            shutil.rmtree(fp)
         else:
             pass        
 
@@ -397,8 +432,7 @@ class PMT(QtGui.QMainWindow, Ui_FirstMainWindow):
         print "rename"
         index = self.treeView.currentIndex()
         filePath = self.model.filePath(index)
-        fp = str(filePath)
-        shutil.copy2()
+
 
 if __name__ == '__main__':
     app = QtGui.QApplication(sys.argv)
