@@ -1,8 +1,6 @@
 To use this tool you need to do the following:
 
-[![This is the link to the how to set up your UE4 project to use these scripts]](https://www.youtube.com/watch?v=dZuEGZiW24Y&feature=youtu.be)
-
-https://youtu.be/dZuEGZiW24Y - This is the link to the how to set up your UE4 project to use these scripts.
+https://youtu.be/dZuEGZiW24Y - This is the link to the how to set up your UE4 project to use these scripts. copy and paste it into your browser to view.
 
 1. Under the editor tab click plugins. Install the following plugins under scripting: 
   a. Editor Scripting Utilities
