@@ -1,0 +1,40 @@
+To use this tool you need to do the following:
+
+How to video : [Youtube](https://youtu.be/dZuEGZiW24Y)
+
+1. Under the editor tab click plugins. Install the following plugins under scripting: 
+  a. Editor Scripting Utilities
+  b. Python Editor Scripting Plugin
+  c. Sequencer Scripting
+  
+  restart the project
+  
+2. Under Project settings > Plugins > Python Check the box that says "Developer Mode"
+Restart the project
+
+3. Under Project settings > Plugins > Python add an additional path under PythonStubs. It will be in under your UnrealProjectName/Intermediate/PythonStub
+Restart the Project
+
+4. Create a Blueprint Function Library C++ Class. Name it FolderColors. If it is not named this it will not work.
+
+5. Duplicate the C++ scripts given and paste into the new .cpp and .h C++ files. They are under ColorScripts/FolderColorFinal/ 
+
+6. Save and Compile
+
+7. Duplicate the FolderDir.py and FolderDir.pyc files into the PythonStub Folder. That path is UnrealProjectName/Intermediate/PythonStub/(place files here)
+
+8. Save and restart
+
+9. To create the folders type in the UE4 python script editor:
+  import FolderDir
+  reload(FolderDir)
+  FolderDir.createColorFolderDir()
+
+10. To update new folder created in folder structure do the following
+  a. Create the new folders
+  b. Type in the UE4 Python script editor the following:
+    import FolderDir
+    reload(FolderDir)
+    FolderDir.getNewFolderCreated()
+  c. Save and restart the file. the folders will have the colors updated.
+  
